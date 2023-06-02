@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: custom-optimizer
+Version: 0.0.1
+Summary: Codon Usage to Specific Tissue OptiMizer
+Home-page: https://github.com/hexavier/CUSTOM
+Author: Xavier Hernandez-Alias
+Author-email: xavier.hernandez@crg.eu
+License: GPLv3
+Requires-Python: >=3.7
+License-File: LICENSE

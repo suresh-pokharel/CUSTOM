@@ -1,0 +1,13 @@
+LICENSE
+setup.py
+custom/__init__.py
+custom/custom.py
+custom/data/CUSTOM_codon_weights.csv
+custom/data/CUSTOM_codonfreq_CoCoPuts.csv
+custom/data/CUSTOM_codonpairsfreq_CoCoPuts.csv
+custom/data/CUSTOM_tissue_ratios.csv
+custom_optimizer.egg-info/PKG-INFO
+custom_optimizer.egg-info/SOURCES.txt
+custom_optimizer.egg-info/dependency_links.txt
+custom_optimizer.egg-info/requires.txt
+custom_optimizer.egg-info/top_level.txt
