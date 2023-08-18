@@ -436,7 +436,7 @@ class TissueOptimizer:
                 # generate new sequence from LinearDesign
                 LD_sequence = run_linear_design_tissue_specific(self.sequence, tissue = self.tissue)['seq']
 
-                # replace U with T to match with other sequences in pool. # Suresh: need to validate
+                # replace U with T to match with other sequences in pool. # Suresh: need to validate...
                 LD_sequence = LD_sequence.replace('U', 'T')
 
                 # append the sequence generated from LinearDesign
