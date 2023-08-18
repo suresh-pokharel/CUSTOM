@@ -220,6 +220,8 @@ def filter_sequences(df):
     return df 
 
 def run_linear_design_tissue_specific(seq, tissue = 'Kidney'):
+
+    print("Running Linear Design ...")
     import subprocess
     
     # Create the text file and make the input sequence ready
@@ -261,6 +263,9 @@ def run_linear_design_tissue_specific(seq, tissue = 'Kidney'):
 
     # store
     dict_output['description'] = ld_results[start_index:end_index]
+
+    print(dict_output)
+    print("Exit LD subprocess")
     
     return dict_output
 
@@ -445,7 +450,7 @@ class TissueOptimizer:
         else:
             raise TypeError("The sequence is not valid.")
     
-    def MFE(self):
+    def MFE_40(self):
         '''
         Calculates the Minimum Free Energy of the body (excludes first 40 nt) 
         of optimized sequences.
@@ -466,6 +471,22 @@ class TissueOptimizer:
             for w in windows:
                 mfe_temp.append(RNA.fold(w)[1])
             MFEs.append(np.mean(mfe_temp))
+        return MFEs
+
+    def MFE(self):
+        '''
+        Calculates the Minimum Free Energy of the body of optimized sequences.
+
+        Returns
+        -------
+        MFE: list
+
+        '''
+        check_is_optimized(self)
+        MFEs = []
+        for seq in self.pool:
+            # mRNA folding in vivo happens while the CDS is being transcribed.
+            MFEs.append(RNA.fold(seq)[1])
         return MFEs
     
     def MFEini(self):
