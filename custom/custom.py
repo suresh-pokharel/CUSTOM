@@ -8,6 +8,18 @@ import numpy as np
 import pandas as pd
 import RNA
 
+# LD parameters
+linear_design_dir = '/home/suresh/Desktop/bayer/LinearDesign/'
+tissue_sp_freq_folder_path = "/home/suresh/Desktop/bayer/CUSTOM/editing_package/data/TS_codon_usage/"
+import_from_LD = True
+print("This is Suresh's update version...")
+
+# Custom parameters
+codon_weights = load_data('data/CUSTOM_codon_weights.csv')
+codon_ratios = load_data('data/CUSTOM_tissue_ratios.csv')
+codon_freq = load_data('data/CUSTOM_codonfreq_CoCoPuts.csv')
+codpair_freq = load_data('data/CUSTOM_codonpairsfreq_CoCoPuts.csv')
+
 # Load data required for optimization
 GENETIC_CODE = {
     'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
@@ -35,10 +47,6 @@ def load_data(file):
     stream = pkg_resources.resource_stream(__name__, file)
     return pd.read_csv(stream, index_col=0)
 
-codon_weights = load_data('data/CUSTOM_codon_weights.csv')
-codon_ratios = load_data('data/CUSTOM_tissue_ratios.csv')
-codon_freq = load_data('data/CUSTOM_codonfreq_CoCoPuts.csv')
-codpair_freq = load_data('data/CUSTOM_codonpairsfreq_CoCoPuts.csv')
 
 def check_is_optimized(optimizer):
     '''
@@ -136,6 +144,125 @@ def action(metric,to_do):
         raise TypeError("Invalid 'by' argument. Please specify either 'max' "
                         "or 'min' to indicate whether each "
                         "metric should be maximized or minimized.")
+
+        
+def filter_sequences(df):
+        '''
+        Filter sequences: Priority-1, 2 (Description to be updated)
+        '''
+    def generate_rev_complement(mRNA_sequences):
+        rev_comp_list = []
+        for mrna_seq in mRNA_sequences:
+
+            # As pair with Us/Ts and Gs pair with Cs. 
+            # So rev-compl of ACCTGAG is CTCAGGT 
+            # To make it you first write the reverse sequence and then replace each nt with its complement (A <-> U/T and G <-> C)
+
+            # reverse sequence
+            rev = mrna_seq[::-1]
+
+            # replace A with X and G with Y
+            rev = rev.replace('A','X')
+            rev = rev.replace('G','Y')
+
+            # replace T/U with A and C with G
+            rev = rev.replace('T','A')
+            rev = rev.replace('C','G')
+
+            # replace A with X and G with Y
+            rev = rev.replace('X','T')
+            rev = rev.replace('Y','C')
+
+            rev_comp_list.append(rev)
+        return rev_comp_list   
+
+    def generate_all_mRNA_point_mutants(mRNA_sequences):
+
+        nucleotides = ['A', 'T', 'G', 'C']
+        mutants = []
+
+        # Loop through all sequences
+        for mrna_seq in mRNA_sequences:
+
+            # Loop through each position in the mRNA sequence
+            for position in range(len(mrna_seq)):
+                current_nucleotide = mrna_seq[position]
+
+                # Generate a mutant for each substitution at the current position
+                for nucleotide in nucleotides:
+                    if nucleotide != current_nucleotide:
+                        mutant = mrna_seq[:position] + nucleotide + mrna_seq[position + 1:]
+                        mutants.append(mutant)
+
+        return mutants
+    
+    # Priority 1. Internal T7 binding sites, BsaI and SapI RE sites
+    # Sequences: TAATACGACTCACTATA, GGTCTC, GCTCTT and rev-compl
+    filter_seqs_1 = ['TAATACGACTCACTATA','GGTCTC','GCTCTT']
+    rev_compl = generate_rev_complement(filter_seqs_1)
+    filter_seqs_1.extend(rev_compl)
+    df = df[~df['Sequence'].str.contains('|'.join(filter_seqs_1))]
+
+    # Priority 2. Primer binding sites:
+    # Sequences: GATTAAGTTGGGTAACGCCAG (FW), GTAAAACGACGGCCAGT (M13fw), GCATATGACT (polyA-bridge)
+    # all 1 point mutant modifications of these, and rev-compl
+    filter_seqs_2 = ['GATTAAGTTGGGTAACGCCAG', 'GTAAAACGACGGCCAGT', 'GCATATGACT']
+    
+    # generate one-point mutants
+    one_point_mutants = generate_all_mRNA_point_mutants(filter_seqs_2)
+    
+    # concat
+    filter_seqs_2.extend(one_point_mutants)
+    
+    # final df
+    df = df[~df['Sequence'].str.contains('|'.join(filter_seqs_2))]
+    
+    return df 
+
+def run_linear_design_tissue_specific(seq, tissue = 'Kidney'):
+    import subprocess
+    
+    # Create the text file and make the input sequence ready
+    with open(linear_design_dir+"/testseq", "w") as file:
+        file.write('>seq_1\n' + seq + '\n')
+        
+    # prepare tissue specific codon usage table in the format that linear design takes
+    tissue_sp_freq_table = tissue_sp_freq_folder_path + tissue + ".csv"
+    
+    # run lineardesign tool
+    bash_command = "cat testseq | ./lineardesign -l 0.3 --codonusage " + tissue_sp_freq_table
+    process = subprocess.Popen(bash_command, shell=True, stdout=subprocess.PIPE, cwd=linear_design_dir)
+    output, error = process.communicate()
+    
+    # convert results to string format
+    ld_results = str(output)
+    
+    # to parse the output text into a dictionary 
+    dict_output = {}
+
+    # extract sequence
+    # Find the index of "rmRNA sequence:"
+    start_index = ld_results.find("mRNA sequence:  ") + len("mRNA sequence:  ")
+
+    # Find the index of the first space after "rmRNA sequence:"
+    end_index = ld_results.find("\\nmRNA", start_index)
+
+    # store
+    dict_output['seq'] = ld_results[start_index:end_index]
+
+    # extract mfe
+    start_index = ld_results.find("mRNA folding free energy: ")
+
+    # Find the index of the first space after "rmRNA sequence:"
+    end_index = ld_results.find("\\n", start_index)
+
+    # Extract the description
+    description= ld_results[start_index:end_index]
+
+    # store
+    dict_output['description'] = ld_results[start_index:end_index]
+    
+    return dict_output
 
 class TissueOptimizer:
     '''
@@ -303,6 +430,26 @@ class TissueOptimizer:
                         newseq.append(optaa(self,aa))
                 pool.append("".join(newseq))
             print("Warning: STOP codon not included")
+                     
+            if import_from_LD:
+                # generate new sequence from LinearDesign
+                LD_sequence = run_linear_design(self.sequence)['seq']
+
+                # replace U with T to match with other sequences in pool. # Suresh: need to validate
+                LD_sequence = LD_sequence.replace('U', 'T')
+
+                # append the sequence generated from LinearDesign
+                pool[len(pool)-1] = LD_sequence
+
+                # codon specific linear design
+                # generate new sequence from LinearDesign
+                LD_sequence = run_linear_design_tissue_specific(self.sequence, tissue = self.tissue)['seq']
+
+                # replace U with T to match with other sequences in pool. # Suresh: need to validate
+                LD_sequence = LD_sequence.replace('U', 'T')
+
+                # append the sequence generated from LinearDesign
+                pool[len(pool)-2] = LD_sequence
             self.pool = pool
         else:
             raise TypeError("The sequence is not valid.")
@@ -501,8 +648,8 @@ class TissueOptimizer:
         Returns
         -------
         best = DataFrame
+
         '''
-        
         check_is_optimized(self)
         select_df = pd.DataFrame(index = range(self.n_pool))
         select_df["Sequence"] = self.pool
@@ -525,19 +672,19 @@ class TissueOptimizer:
                 norm = action(metric,by[c])
             elif c=="GC":
                 metric = np.array(self.GC())
-                # norm = action(np.abs(metric-by[c]),"min")
-                norm = action(np.abs(metric),"max")
+                # norm = action(np.abs(metric),"min")  
+                norm = action(np.abs(metric-by[c]),"min")
             elif c=="UD":
                 metric = np.array(self.U_count())
-                norm = action(np.abs(metric),"min")  
+                # norm = action(np.abs(metric),"min")  
+                norm = action(np.abs(metric-by[c]),"min")
             elif c=="UAD":
                 metric = np.array(self.UA_count())
-                norm = action(np.abs(metric),"min")  
+                # norm = action(np.abs(metric),"min")  
+                norm = action(np.abs(metric-by[c]),"min")
             else:
                 raise TypeError("Invalid 'by' argument.")
-            
             select_df[c] = metric
-            
             # Normalize between 0 and 1
             norm_metric = (norm-np.min(norm))/np.ptp(norm)
             norm_df[c] = norm_metric
@@ -553,8 +700,13 @@ class TissueOptimizer:
         for m in exclude_motifs:
             idx = np.array([m in seq for seq in select_df.Sequence])
             select_df = select_df.loc[np.logical_not(idx),:]
+        
+        # filter
+        select_df_filtered = filter_sequences(select_df)
+        
         # Sort and select best candidates
-        best = select_df.sort_values(by="Score", ascending=False)
+        best = select_df_filtered.sort_values(by="Score", ascending=False)
+        
         if top:
             best = best.head(n=top)
         return best
