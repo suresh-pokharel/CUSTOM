@@ -432,16 +432,7 @@ class TissueOptimizer:
             print("Warning: STOP codon not included")
                      
             if import_from_LD:
-                # generate new sequence from LinearDesign
-                LD_sequence = run_linear_design(self.sequence)['seq']
-
-                # replace U with T to match with other sequences in pool. # Suresh: need to validate
-                LD_sequence = LD_sequence.replace('U', 'T')
-
-                # append the sequence generated from LinearDesign
-                pool[len(pool)-1] = LD_sequence
-
-                # codon specific linear design
+                # tissue specific linear design
                 # generate new sequence from LinearDesign
                 LD_sequence = run_linear_design_tissue_specific(self.sequence, tissue = self.tissue)['seq']
 
@@ -449,7 +440,7 @@ class TissueOptimizer:
                 LD_sequence = LD_sequence.replace('U', 'T')
 
                 # append the sequence generated from LinearDesign
-                pool[len(pool)-2] = LD_sequence
+                pool[len(pool)-1] = LD_sequence
             self.pool = pool
         else:
             raise TypeError("The sequence is not valid.")
