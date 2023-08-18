@@ -147,9 +147,9 @@ def action(metric,to_do):
 
         
 def filter_sequences(df):
-        '''
-        Filter sequences: Priority-1, 2 (Description to be updated)
-        '''
+    '''
+    Filter sequences: Priority-1, 2 (Description to be updated)
+    '''
     def generate_rev_complement(mRNA_sequences):
         rev_comp_list = []
         for mrna_seq in mRNA_sequences:
@@ -177,7 +177,6 @@ def filter_sequences(df):
         return rev_comp_list   
 
     def generate_all_mRNA_point_mutants(mRNA_sequences):
-
         nucleotides = ['A', 'T', 'G', 'C']
         mutants = []
 
