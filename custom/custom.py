@@ -33,13 +33,15 @@ GENETIC_CODE = {
     'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
     'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'}
 
+
 def load_data(file):
     '''
-    Return a dataframe of the required file.
+    Return a dataframe of the required file
 
     '''
     stream = pkg_resources.resource_stream(__name__, file)
     return pd.read_csv(stream, index_col=0)
+
 
 # Custom parameters
 codon_weights = load_data('data/CUSTOM_codon_weights.csv')
