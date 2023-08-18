@@ -14,20 +14,6 @@ tissue_sp_freq_folder_path = "/home/suresh/Desktop/bayer/CUSTOM/editing_package/
 import_from_LD = True
 print("This is Suresh's update version...")
 
-def load_data(file):
-    '''
-    Return a dataframe of the required file.
-
-    '''
-    stream = pkg_resources.resource_stream(__name__, file)
-    return pd.read_csv(stream, index_col=0)
-
-# Custom parameters
-codon_weights = load_data('data/CUSTOM_codon_weights.csv')
-codon_ratios = load_data('data/CUSTOM_tissue_ratios.csv')
-codon_freq = load_data('data/CUSTOM_codonfreq_CoCoPuts.csv')
-codpair_freq = load_data('data/CUSTOM_codonpairsfreq_CoCoPuts.csv')
-
 # Load data required for optimization
 GENETIC_CODE = {
     'ATA':'I', 'ATC':'I', 'ATT':'I', 'ATG':'M',
@@ -46,6 +32,20 @@ GENETIC_CODE = {
     'TTC':'F', 'TTT':'F', 'TTA':'L', 'TTG':'L',
     'TAC':'Y', 'TAT':'Y', 'TAA':'_', 'TAG':'_',
     'TGC':'C', 'TGT':'C', 'TGA':'_', 'TGG':'W'}
+
+def load_data(file):
+    '''
+    Return a dataframe of the required file.
+
+    '''
+    stream = pkg_resources.resource_stream(__name__, file)
+    return pd.read_csv(stream, index_col=0)
+
+# Custom parameters
+codon_weights = load_data('data/CUSTOM_codon_weights.csv')
+codon_ratios = load_data('data/CUSTOM_tissue_ratios.csv')
+codon_freq = load_data('data/CUSTOM_codonfreq_CoCoPuts.csv')
+codpair_freq = load_data('data/CUSTOM_codonpairsfreq_CoCoPuts.csv')
 
 def check_is_optimized(optimizer):
     '''
